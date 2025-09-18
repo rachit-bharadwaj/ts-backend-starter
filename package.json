@@ -1,0 +1,27 @@
+{
+  "name": "ts-backend-starter",
+  "version": "0.1.0",
+  "description": "CLI to scaffold a TypeScript backend project from template/",
+  "license": "ISC",
+  "author": "Rachit Bharadwaj",
+  "type": "commonjs",
+  "main": "index.js",
+  "bin": {
+    "ts-backend-starter": "bin/ts-backend-starter.js"
+  },
+  "files": [
+    "bin",
+    "template"
+  ],
+  "engines": {
+    "node": ">=14.17"
+  },
+  "keywords": [
+    "typescript",
+    "backend",
+    "starter",
+    "scaffold",
+    "template"
+  ],
+  "scripts": {}
+}
