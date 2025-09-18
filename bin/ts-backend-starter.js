@@ -30,14 +30,19 @@ function ensureDirExists(dirPath) {
   fs.mkdirSync(dirPath, { recursive: true });
 }
 
-function copyRecursive(src, dest) {
+function copyRecursive(src, dest, options = {}) {
+  const { shouldIgnore } = options;
   const stat = fs.statSync(src);
   if (stat.isDirectory()) {
     ensureDirExists(dest);
     for (const entry of fs.readdirSync(src)) {
-      copyRecursive(path.join(src, entry), path.join(dest, entry));
+      const srcEntry = path.join(src, entry);
+      const destEntry = path.join(dest, entry);
+      if (shouldIgnore && shouldIgnore(srcEntry)) continue;
+      copyRecursive(srcEntry, destEntry, options);
     }
   } else {
+    if (shouldIgnore && shouldIgnore(src)) return;
     ensureDirExists(path.dirname(dest));
     fs.copyFileSync(src, dest);
   }
@@ -71,8 +76,28 @@ function main() {
     );
   }
 
-  // Perform copy
-  copyRecursive(templateDir, targetDir);
+  // Prepare ignore logic: skip template root package.json (we will generate a new one)
+  const templateRootPackageJsonPath = path.join(templateDir, "package.json");
+  const shouldIgnore = (absSrcPath) => absSrcPath === templateRootPackageJsonPath;
+
+  // Perform copy, excluding template/package.json
+  copyRecursive(templateDir, targetDir, { shouldIgnore });
+
+  // Build package.json for the new project
+  let projectName = path.basename(targetDir);
+  try {
+    const templatePkgRaw = fs.readFileSync(templateRootPackageJsonPath, "utf8");
+    const templatePkg = JSON.parse(templatePkgRaw);
+    const newPkg = {
+      ...templatePkg,
+      name: projectName,
+      description: "Backend project built using ts-backend-starter",
+    };
+    const output = JSON.stringify(newPkg, null, 2) + "\n";
+    fs.writeFileSync(path.join(targetDir, "package.json"), output, "utf8");
+  } catch (err) {
+    exitWithError("Failed to generate package.json: " + err.message);
+  }
 
   console.log("\n✔ Project scaffolded successfully!");
   console.log(`→ Location: ${targetDir}`);
