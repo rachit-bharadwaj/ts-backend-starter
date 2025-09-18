@@ -3,6 +3,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { execSync, spawn } = require("child_process");
 
 function printUsage() {
   console.log(
@@ -99,13 +100,41 @@ function main() {
     exitWithError("Failed to generate package.json: " + err.message);
   }
 
-  console.log("\n✔ Project scaffolded successfully!");
+  console.log("\n✔ Project setup done successfully!");
   console.log(`→ Location: ${targetDir}`);
-  console.log("\nNext steps:");
-  console.log("1) cd", targetArg);
-  console.log("2) npm install");
-  console.log("3) Create .env from example.env and update values");
-  console.log("4) npm run dev");
+  console.log("\nInstalling dependencies (this may take a minute)...");
+  try {
+    execSync("npm install", { cwd: targetDir, stdio: "inherit" });
+  } catch (err) {
+    console.error("\nDependency installation failed. You can run 'npm install' manually.");
+  }
+
+  console.log("\nCreate .env from example.env and update values as needed.");
+
+  // Prompt to run dev server
+  const readline = require("readline");
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  rl.question("\nDo you want to start the dev server now? (y/N) ", (answer) => {
+    rl.close();
+    const yes = typeof answer === "string" && answer.trim().toLowerCase().startsWith("y");
+    if (!yes) {
+      console.log("\nAll set! To start later:");
+      console.log(`cd ${targetArg}`);
+      console.log("npm run dev");
+      process.exit(0);
+    }
+
+    console.log("\nStarting dev server...\n");
+    // Use shell to be robust across Windows (cmd, PowerShell, Git Bash) and POSIX shells
+    const child = spawn("npm", ["run", "dev"], {
+      cwd: targetDir,
+      stdio: "inherit",
+      shell: true,
+    });
+    child.on("close", (code) => {
+      process.exit(code ?? 0);
+    });
+  });
 }
 
 main();
