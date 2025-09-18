@@ -23,5 +23,8 @@
     "scaffold",
     "template"
   ],
-  "scripts": {}
+  "scripts": {},
+  "publishConfig": {
+    "access": "public"
+  }
 }
